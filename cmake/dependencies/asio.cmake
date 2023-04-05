@@ -1,0 +1,18 @@
+include(ExternalProject)
+
+FILE(GLOB ASIO_BUILD_SRC ${KINO_SRC_PREFIX}/asio/asio/*.*)
+
+SET(ASIO_CONFIGURE_COMMAND cd ${KINO_SRC_PREFIX}/asio/asio && dos2unix ${ASIO_BUILD_SRC} && chmod +x ${ASIO_BUILD_SRC} && sh ./autogen.sh && ./configure --prefix=${CMAKE_INSTALL_PREFIX})
+SET(ASIO_BUILD_COMMAND cd ${KINO_SRC_PREFIX}/asio/asio && make)
+SET(ASIO_INSTALL_COMMAND cd ${KINO_SRC_PREFIX}/asio/asio && make install)
+
+ExternalProject_Add(asio
+        INSTALL_DIR ${CMAKE_INSTALL_PREFIX}
+        SOURCE_DIR  ${KINO_SRC_PREFIX}/asio
+        # CONFIGURE_COMMAND ${CMAKE_COMMAND}
+        PREFIX ${CMAKE_CURRENT_BINARY_DIR}/asio
+        CONFIGURE_COMMAND ${ASIO_CONFIGURE_COMMAND}
+        BUILD_COMMAND ${ASIO_BUILD_COMMAND}
+        INSTALL_COMMAND ${ASIO_INSTALL_COMMAND}
+        # INSTALL_COMMAND ${CMAKE_MAKE_PROGRAM} install
+)
