@@ -24,33 +24,37 @@ using asio::strand;
 using asio::system_executor;
 
 #include "message_handler.h"
+#include "gen.h"
 
 class Actor {
 public:
     virtual ~Actor() {}
 
-    ActorAddress  Address() {
-        return this;
-    }
-
-    friend void Send(Message &&msg, ActorAddress from, ActorAddress to)
+    void Send(std::shared_ptr<Message> msg)
     {
         // Execute the message handler in the context of the target's executor.
-        post(to->executor_,
-             [=, &msg]
-             {
-                 to->CallHandler(std::move(msg), from);
-             });
+//        Actor *to = gen.
+        CallHandler(msg);
     }
 
+    void SetId(uint32_t id) {
+        id_ = id;
+    }
+
+    virtual bool Init(std::unique_ptr<Conf> conf) {
+        return true;
+    }
+
+    void SetContext(Gen *gen, Executor *ctx) {
+        gen_ = gen;
+        ctx_ = ctx;
+    }
 protected:
-    Actor(any_io_executor e)
-    : executor_(std::move(e))
-    {
+    Actor() {
     }
 
     template <class Actor>
-    void RegisterHandler(void (Actor::* mf)(Message, ActorAddress), MessageType msgType)
+    void RegisterHandler(void (Actor::* mf)(std::shared_ptr<Message>), MessageType msgType)
     {
         handlers_.push_back(
                 std::make_shared<MfMessageHandler<Actor>>(
@@ -58,7 +62,7 @@ protected:
     }
 
     template <class Actor>
-    void DeregisterHandler(void (Actor::* mf)(Message, ActorAddress), MessageType msgType)
+    void DeregisterHandler(void (Actor::* mf)(std::shared_ptr<Message>), MessageType msgType)
     {
         for (auto iter = handlers_.begin(); iter != handlers_.end(); ++iter)
         {
@@ -75,22 +79,23 @@ protected:
     }
 
 private:
-    void CallHandler(Message &&msg, ActorAddress from)
+    void CallHandler(std::shared_ptr<Message> msg)
     {
         for (auto& h: handlers_)
         {
-            if (h->GetMsgType() == msg.GetMsgType())
+            if (h->GetMsgType() == msg->GetMsgType())
             {
                 auto mh = static_cast<MessageHandler*>(h.get());
-                mh->HandleMessage(std::move(msg), from);
+                mh->HandleMessage(msg);
             }
         }
     }
 
 private:
-    strand<any_io_executor> executor_;
-
+    Gen *gen_ = nullptr;
+    Executor *ctx_ = nullptr;
     std::vector<std::shared_ptr<MessageHandler>> handlers_;
+    uint32_t id_;
 };
 
 

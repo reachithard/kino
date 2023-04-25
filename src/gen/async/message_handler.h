@@ -13,7 +13,7 @@ class MessageHandler {
 public:
     virtual ~MessageHandler() {}
 
-    virtual void HandleMessage(Message &&msg, ActorAddress from) = 0;
+    virtual void HandleMessage(std::shared_ptr<Message> msg) = 0;
 
     virtual MessageType GetMsgType() const = 0;
 };
@@ -21,25 +21,25 @@ public:
 template<class Actor>
 class MfMessageHandler : public  MessageHandler {
 public:
-    MfMessageHandler(void (Actor::* mf)(Message, ActorAddress), Actor *a, MessageType msgType) : function_(mf), actor_(a), msgType_(msgType) {
+    MfMessageHandler(void (Actor::* mf)(std::shared_ptr<Message>), Actor *a, MessageType msgType) : function_(mf), actor_(a), msgType_(msgType) {
     }
 
     MessageType GetMsgType() const override{
         return msgType_;
     }
 
-    virtual void HandleMessage(Message &&msg, ActorAddress from) {
-        (actor_->*function_)(std::move(msg), from);
+    virtual void HandleMessage(std::shared_ptr<Message> msg) {
+        (actor_->*function_)(msg);
     }
 
-    bool IsFunction(void (Actor::* mf)(Message, ActorAddress)) {
+    bool IsFunction(void (Actor::* mf)(std::shared_ptr<Message>)) {
         return mf == function_;
     }
 
 private:
     MessageType msgType_;
     Actor *actor_;
-    void (Actor::* function_)(Message, ActorAddress);
+    void (Actor::* function_)(std::shared_ptr<Message> msg);
 };
 
 #endif //KINO_MESSAGE_HANDLER_H

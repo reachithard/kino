@@ -18,7 +18,7 @@ enum class MessageType {
     S2c_REGISTER
 };
 
-class Message {
+class Message : public std::enable_shared_from_this<Message> {
 public:
     explicit Message(MessageType msgType) : msgType_(msgType)
     {
@@ -36,8 +36,6 @@ public:
     :msgType_(other.msgType_)
     , sender_(std::exchange(other.sender_, 0))
     , receiver_(std::exchange(other.receiver_, 0))
-    , sessionid_(std::exchange(other.sessionid_, 0))
-    , header_(std::move(other.header_))
     , data_(std::move(other.data_))
     {
     }
@@ -49,8 +47,6 @@ public:
             msgType_ = other.msgType_;
             sender_ = std::exchange(other.sender_, 0);
             receiver_ = std::exchange(other.receiver_, 0);
-            sessionid_ = std::exchange(other.sessionid_, 0);
-            header_ = std::move(other.header_);
             data_ = std::move(other.data_);
         }
         return *this;
@@ -60,12 +56,14 @@ public:
         return msgType_;
     }
 
+    uint32_t GetReceiver() const {
+        return receiver_;
+    }
+
 private:
     MessageType msgType_ = MessageType::UNKNOW;
     uint32_t sender_ = 0;
     uint32_t receiver_ = 0;
-    int32_t sessionid_ = 0;
-    std::unique_ptr<std::string> header_;
     std::vector<unsigned char> data_;
 };
 
